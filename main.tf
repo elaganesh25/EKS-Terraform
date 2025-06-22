@@ -20,6 +20,10 @@ resource "aws_subnet" "coffeeshop_subnet" {
   tags = {
     Name = "coffeeshop-subnet-${count.index}"
   }
+  lifecycle {
+    prevent_destroy = false
+    ignore_changes  = [map_public_ip_on_launch]
+  }
 }
 
 resource "aws_internet_gateway" "coffeeshop_igw" {
@@ -94,6 +98,10 @@ resource "aws_eks_cluster" "coffeeshop" {
     subnet_ids         = aws_subnet.coffeeshop_subnet[*].id
     security_group_ids = [aws_security_group.coffeeshop_cluster_sg.id]
   }
+  depends_on = [
+    aws_security_group.coffeeshop_cluster_sg,
+    aws_subnet.coffeeshop_subnet
+  ]
 }
 
 resource "aws_eks_node_group" "coffeeshop" {
@@ -114,6 +122,7 @@ resource "aws_eks_node_group" "coffeeshop" {
     ec2_ssh_key = var.ssh_key_name
     source_security_group_ids = [aws_security_group.coffeeshop_node_sg.id]
   }
+  depends_on = [aws_eks_cluster.coffeeshop]
 }
 
 resource "aws_iam_role" "coffeeshop_cluster_role" {
